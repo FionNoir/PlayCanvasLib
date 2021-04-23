@@ -136,7 +136,7 @@ OrbitCamera.distanceBetween = new pc.Vec3();
 
 // Set the camera position to a world position and look at a world position
 // Useful if you have multiple viewing angles to swap between in a scene
-OrbitCamera.prototype.resetAndLookAtPoint = function (resetPoint, lookAtPoint) {
+OrbitCamera.prototype.resetAndLookAtPoint = function (resetPoint, lookAtPoint) { 
     console.log("resetAndLookAtPoint");
     this.pivotPoint.copy(lookAtPoint);
     this.entity.setPosition(resetPoint);
