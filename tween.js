@@ -1,7 +1,7 @@
 pc.extend(pc, function () {
 
    /**
-    * @name pc.TweenManager
+    * @name pc.TweenManager 
     * @description Handles updating tweens
     * @param {pc.Application} app  The application
     */
