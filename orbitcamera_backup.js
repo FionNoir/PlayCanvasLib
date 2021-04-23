@@ -110,28 +110,6 @@ OrbitCamera.prototype.focus = function (focusEntity) {
 };
 
 
-// Moves the camera to look at an entity and all its children so they are all in the view
-OrbitCamera.prototype.smoothFocus = function (focusEntity) {
-    // Calculate an bounding box that encompasses all the models to frame in the camera view
-    this._buildAabb(focusEntity, 0);
-
-    var halfExtents = this._modelsAabb.halfExtents;
-
-    var distance = Math.max(halfExtents.x, Math.max(halfExtents.y, halfExtents.z));
-    distance = (distance / Math.tan(0.5 * this.entity.camera.fov * pc.math.DEG_TO_RAD));
-    distance = (distance * 1.0);
-    
-    this.distance = distance;
-    
-   
-   // removeInertia makes the camera move to position without lerp 
-   // this._removeInertia();
-
-    this._pivotPoint.copy(this._modelsAabb.center);
-};
-
-
-
 OrbitCamera.distanceBetween = new pc.Vec3();
 
 // Set the camera position to a world position and look at a world position
@@ -173,7 +151,7 @@ OrbitCamera.prototype.reset = function (yaw, pitch, distance) {
     this.yaw = yaw;
     this.distance = distance;
 
-    //this._removeInertia();
+    this._removeInertia();
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -246,7 +224,6 @@ OrbitCamera.prototype.initialize = function () {
     this.on('attr:focusEntity', function (value, prev) {
         if (this.frameOnStart) {
             this.focus(value || this.app.root);
-            
         } else {
             this.resetAndLookAtEntity(this.entity.getPosition(), value || this.app.root);
         }
@@ -262,29 +239,10 @@ OrbitCamera.prototype.initialize = function () {
         window.removeEventListener('resize', onWindowResize, false);
     });
     
-    this.app.on('setFocus', function(value) {
-        //self.focus(value);
-        self.smoothFocus(value);
-    });
-    
-    
    //this.app.on("setlookAtHotspot", this.resetPoint, this.lookAtPoint,this);
     this.app.on("lookAtHotspot", function(position, target) {
         
         self.lookAtHotspot(position, target);
-    });
-    
-    
-     this.app.on("lookAndFocusAtHotspot", function(position, target, returnToInitialViewangle) {
-        if (returnToInitialViewangle === undefined) {
-            returnToInitialViewangle = true;
-        }
-        self.lookAndFocusAtHotspot(position, target, returnToInitialViewangle );
-    });
-    
-    this.app.on('focusEntity', function (resetEntity, focusEntity) {       
-        self.resetAndLookAtEntity(self.entity.getPosition(), focusEntity || this.app.root);
-        
     });
    
  
@@ -313,132 +271,33 @@ OrbitCamera.prototype.initialize = function () {
 
 /**
  * Move Camera to 'resetPoint' and look at 'lookAtPoint'
- * @param resetPoint {Vec3} new camera position to move to
+ * @param resetPoint {entity} new camera position to move to
  * @param lookAtPoint {entity} new point to look at
  */
 OrbitCamera.prototype.lookAtHotspot = function(resetPoint, lookAtPoint) {
-    
-    if (resetPoint == "Camera") {
-        resetPoint = this.camPos;
-    }
-    
-    
-    // Calculate an bounding box that encompasses all the models to frame in the camera view
-    this._buildAabb(lookAtPoint, 0);
 
-    var halfExtents = this._modelsAabb.halfExtents;
-
-    var distance = Math.max(halfExtents.x, Math.max(halfExtents.y, halfExtents.z));
-    distance = (distance / Math.tan(0.5 * this.entity.camera.fov * pc.math.DEG_TO_RAD));
-    distance = (distance *2.0);
-
-    this.distance = distance;
-
-    this._removeInertia();
-
-    this._pivotPoint.copy(this._modelsAabb.center);
-    
-    lookAtPoint = this._pivotPoint;
-    
     if(this.Goto)return;
-    console.log("lookAtHotspot");
-    this._lockPivot.copy(lookAtPoint);          
+        console.log("resetAndLookAtPoint");
+        this._lockPivot.copy(lookAtPoint);          
+        
+        this.teCam.setPosition(resetPoint);            
+        this.teCam.lookAt(lookAtPoint);              
 
-    this.teCam.setPosition(resetPoint);            
-    this.teCam.lookAt(lookAtPoint);              
+        this.newDis.sub2(lookAtPoint, resetPoint);    
 
-    this.newDis.sub2(lookAtPoint, resetPoint);    
-
-    this.startPos.copy(this.entity.getPosition());
-    this.startRot.copy(this.entity.getRotation());
-    this.targPos.copy(this.teCam.getPosition());
-    this.targRot.copy(this.teCam.getRotation());       
-
-    this._lockDist = this.newDis.length();                
-    this._lockYaw = this._calcYaw(this.targRot);             
-    this._lockPitch = this._calcPitch(this.targRot , this._targetYaw);
-
-
-    this.Goto = true;
-    this.GotoTimer = 0.0;
-    
-    
-    //this.smoothFocus(lookAtPoint);
-    
-};
-
-/**
- * Move Camera focus on 'lookAtPoint' and moves to as far away as necessary
- * @param resetPoint {Vec3} new camera position to move to
- * @param lookAtPoint {entity} new point to look at
- * @param returnToInitialViewangle {bool} True camera return to the default view position defined by resetpoint
- */
-OrbitCamera.prototype.lookAndFocusAtHotspot = function(resetPoint, lookAtPoint, returnToInitialViewangle) {
-    
-    if (resetPoint == "Camera") {
-        resetPoint = this.camPos;
-    }
-    
-    
-    // Calculate an bounding box that encompasses all the models to frame in the camera view
-    this._buildAabb(lookAtPoint, 0);
-
-    var halfExtents = this._modelsAabb.halfExtents;
-
-    var distance = Math.max(halfExtents.x, Math.max(halfExtents.y, halfExtents.z));
-    distance = (distance / Math.tan(0.5 * this.entity.camera.fov * pc.math.DEG_TO_RAD));
-    distance = (distance *1.0);
-
-    this.distance = distance;
-    
-     var lookDirection = new pc.Vec3();
-    lookDirection.sub2(lookAtPoint.getPosition(), resetPoint);
-    
-    //console.log(this.entity.forward.normalize().mulScalar(distance));
-    //console.log(lookAtPoint.getPosition());
-    
-    // Calculate new resetPoint based on distance
-      console.log(returnToInitialViewangle);
-    if (returnToInitialViewangle === true) {
-        // point in direction of reset camera position
-        resetPoint.sub2(lookAtPoint.getPosition(),lookDirection.normalize().mulScalar(distance));
-    } else {
-        // point in direction of current camera position
-        resetPoint.sub2(lookAtPoint.getPosition(),this.entity.forward.normalize().mulScalar(distance));
-    }
-
-
-    this._removeInertia();
-
-    this._pivotPoint.copy(this._modelsAabb.center);
-    
-    lookAtPoint = this._pivotPoint;
-    
-    if(this.Goto)return;
-    console.log("lookAtHotspot");
-    this._lockPivot.copy(lookAtPoint);          
-
-    this.teCam.setPosition(resetPoint);            
-    this.teCam.lookAt(lookAtPoint);              
-
-    this.newDis.sub2(lookAtPoint, resetPoint);    
-
-    this.startPos.copy(this.entity.getPosition());
-    this.startRot.copy(this.entity.getRotation());
-    this.targPos.copy(this.teCam.getPosition());
-    this.targRot.copy(this.teCam.getRotation());       
-
-    this._lockDist = this.newDis.length();                
-    this._lockYaw = this._calcYaw(this.targRot);             
-    this._lockPitch = this._calcPitch(this.targRot , this._targetYaw);
-
-
-    this.Goto = true;
-    this.GotoTimer = 0.0;
-    
-    
-    //this.smoothFocus(lookAtPoint);
-    
+        this.startPos.copy(this.entity.getPosition());
+        this.startRot.copy(this.entity.getRotation());
+        this.targPos.copy(this.teCam.getPosition());
+        this.targRot.copy(this.teCam.getRotation());       
+        
+        this._lockDist = this.newDis.length();                
+        this._lockYaw = this._calcYaw(this.targRot);             
+        this._lockPitch = this._calcPitch(this.targRot , this._targetYaw);
+      
+        
+        this.Goto = true;
+        this.GotoTimer = 0.0;
+        
 };
 
 
@@ -485,12 +344,12 @@ OrbitCamera.prototype.update = function(dt) {
 OrbitCamera.prototype._updatePosition = function () {
     // Work out the camera position based on the pivot point, pitch, yaw and distance
     this.entity.setPosition(0,0,0);
-    this.entity.setEulerAngles(this._pitch, this._yaw, 0);     //Important to update：Steigungswinkel, Rollwinkel，横摇角
+    this.entity.setEulerAngles(this._pitch, this._yaw, 0);     //更新要素：俯仰角，横摇角
 
     var position = this.entity.getPosition();
     position.copy(this.entity.forward);
-    position.scale(-this._distance);             //Important to update：Abstand
-    position.add(this.pivotPoint);               //Important to update：Ziel-Punkt-Position
+    position.scale(-this._distance);            //更新要素：距离
+    position.add(this.pivotPoint);              //更新要素：目标点位置
     this.entity.setPosition(position);
 };
 
