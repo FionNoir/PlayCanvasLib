@@ -110,7 +110,7 @@ OrbitCamera.prototype.focus = function (focusEntity) {
 };
 
 
-// Moves the camera to look at an entity and all its children so they are all in the view
+// Changes the distance of the camera to look at an entity and all its children so they are all in the view
 OrbitCamera.prototype.smoothFocus = function (focusEntity) {
     // Calculate an bounding box that encompasses all the models to frame in the camera view
     this._buildAabb(focusEntity, 0);
@@ -368,10 +368,10 @@ OrbitCamera.prototype.lookAtHotspot = function(resetPoint, lookAtPoint) {
 };
 
 /**
- * Move Camera focus on 'lookAtPoint' and moves to as far away as necessary
- * @param resetPoint {Vec3} new camera position to move to
+ * Move Camera focus on 'lookAtPoint' and moves as far away as necessary
+ * @param resetPoint {Vec3} new camera position to move to (optional). Enter "camera" to stay a current position.
  * @param lookAtPoint {entity} new point to look at
- * @param returnToInitialViewangle {bool} True camera return to the default view position defined by resetpoint
+ * @param returnToInitialViewangle {bool} True camera return to the default view position defined by resetpoint on start
  */
 OrbitCamera.prototype.lookAndFocusAtHotspot = function(resetPoint, lookAtPoint, returnToInitialViewangle) {
     
